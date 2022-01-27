@@ -1,0 +1,26 @@
+{
+  "name": "modbus_tcp",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^11.0.0",
+    "express": "^4.17.2",
+    "modbus-stream": "^0.46.0",
+    "modbus-tcp": "^0.4.13",
+    "socket.io": "^4.4.1"
+  },
+  "devDependencies": {
+    "install": "^0.13.0",
+    "nodemon": "^2.0.15",
+    "npm": "^8.3.1"
+  }
+}
