@@ -5,8 +5,11 @@ import express from "express";
 import { Server as socketIo } from "socket.io";
 import http from "http"
 import realTimeRouter from "./realtime.js";
+import cors from "cors"
 
 const app = express()
+
+app.use(cors())
 
 let topOilTemp;
 let wndTemp;
@@ -414,12 +417,12 @@ function getPresentPort(){
 
 app.listen(9000)
 
-app.use((req, res, next) => {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Methods", "GET,HEAD,OPTIONS,POST,PUT");
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
-    next();
-});
+// app.use((req, res, next) => {
+//     res.header("Access-Control-Allow-Origin", "*");
+//     res.header("Access-Control-Allow-Methods", "GET,HEAD,OPTIONS,POST,PUT");
+//     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+//     next();
+// });
 
 app.use("/trafo",realTimeRouter)
 
