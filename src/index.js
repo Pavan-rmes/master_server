@@ -16,7 +16,7 @@ let wndTemp;
 let loadPower;
 let loadCurrent;
 let tapPosition;
-let oltcCurrent;
+let oltcCurrent = 0;
 let oltcVoltage;
 
 let fankBank1Status
@@ -29,8 +29,10 @@ let fankBank2Current
 let fankBank3Current
 let fankBank4Current 
 
+let No = process.argv[2]
+
 //modbus port 
-let modbusPort = 50003
+let modbusPort = 50000+(+No)
 
 //Fan bank threshold values
 let fankBank1Threshold = 60
@@ -57,6 +59,25 @@ let oilExponent = 0.9
 let topOilTempRiseAtRatedLoad = 35
 let wndgTempAtRatedLoad = 40
 
+// cooling system
+let OLTCFB1InletTemp;
+let OLTCFB1OutletTemp;
+let OLTCFB1TempDiff;
+let RegMap=[];
+
+
+//Bushing tags
+//capacitance
+//Took the insulation resistance as 100Mohms,freq is 50
+//c = 1/(wRC*tan(d))
+let MVBush1Cap;let MVBush2Cap;let MVBush3Cap;
+let LVBush1Cap;let LVBush2Cap;let LVBush3Cap;
+let HVBush1Cap;let HVBush2Cap;let HVBush3Cap;
+
+//tan delta
+let MVBush1tand;let MVBush2tand;let MVBush3tand;
+let LVBush1tand;let LVBush2tand;let LVBush3tand;
+let HVBush1tand;let HVBush2tand;let HVBush3tand;
 
 
 
@@ -67,23 +88,210 @@ function convertValues(num){
     return (new Buffer.from([firstPart,lastPart]))
 }
 
+function Modbus(data){
+    let inputArray = BreakString(data.toString("hex"))
+    let outputArray = inputArray.filter((val,index)=>index<=8)
+    let noOfRegAsked = parseInt(inputArray[11],16)
+    outputArray[5] = convertToHex(3 + noOfRegAsked*2)
+    outputArray[8] = convertToHex(noOfRegAsked*2)
+    let regValue = parseInt(inputArray[8]+inputArray[9],16)
+    let indexOfReg=0;
+    RegMap.map((reg,index)=>{
+      if(reg.reg === regValue){
+        indexOfReg = index;
+      }
+    })
+    let result = []
+    outputArray.forEach((ele)=>{
+      result.push(parseInt(ele,16))
+    })
+    for(let i=1;i<=noOfRegAsked && i<=RegMap.length;i++){
+      result.push(convertValues(RegMap[indexOfReg]?.val)[0]);
+      result.push(convertValues(RegMap[indexOfReg]?.val)[1])
+      indexOfReg++;
+    }
+    return result
+}
+
+function BreakString(str){
+    let arr=[]
+    for (let i=0;i<str.length;i+=2){
+      arr.push(str.substring(i,i+2))
+    }
+    return(arr)
+}
+  
+function convertToHex(num){
+let result 
+if(num <=15){
+    result = 0+num.toString(16)
+}
+else{
+    result = num.toString(16)
+}
+return result
+}
+
+function updateRegisterValues(){
+   
+    RegMap = [
+        {
+          reg:2048,
+          val:topOilTemp
+        },
+        {
+          reg:2049,
+          val:wndTemp
+        },
+        {
+          reg:2050,
+          val:ambientTemp*100
+        },
+        {
+          reg:2051,
+          val:loadPower
+        },
+        {
+            reg:2052,
+            val:loadCurrent*100
+        },
+        {
+            reg:2053,
+            val:tapPosition*100
+        },
+        {
+            reg:2054,
+            val:oltcCurrent
+        },
+        {
+            reg:2055,
+            val:oltcVoltage*100
+        },
+        {
+            reg:2056,
+            val:fankBank1Status*100
+        },
+        {
+            reg:2057,
+            val:fankBank2Status*100
+        },
+        {
+            reg:2058,
+            val:fankBank3Status*100
+        },
+        {
+            reg:2059,
+            val:fankBank4Status*100
+        },
+        {
+            reg:2060,
+            val:fankBank1Current
+        },
+        {
+            reg:2061,
+            val:fankBank2Current
+        },
+        {
+            reg:2062,
+            val:fankBank3Current
+        },
+        {
+            reg:2063,
+            val:fankBank4Current
+        },
+        {
+            reg:2064,
+            val:OLTCFB1InletTemp   
+        },
+        {
+            reg:2065,
+            val:OLTCFB1OutletTemp
+        },
+        {
+            reg:2066,
+            val:OLTCFB1TempDiff
+        },
+        {
+            reg:2067,
+            val:MVBush1Cap
+        },
+        {
+            reg:2068,
+            val:MVBush2Cap
+        },
+        {
+            reg:2069,
+            val:MVBush3Cap
+        },
+        {
+            reg:2070,
+            val:LVBush1Cap
+        },
+        {
+            reg:2071,
+            val:LVBush2Cap
+        },
+        {
+            reg:2072,
+            val:LVBush3Cap
+        },
+        {
+            reg:2073,
+            val:HVBush1Cap
+        },
+        {
+            reg:2074,
+            val:HVBush2Cap
+        },
+        {
+            reg:2075,
+            val:HVBush3Cap
+        },
+        {
+            reg:2076,
+            val:MVBush1tand
+        },
+        {
+            reg:2077,
+            val:MVBush2tand
+        },
+        {
+            reg:2078,
+            val:MVBush3tand
+        },
+        {
+            reg:2079,
+            val:LVBush1tand
+        },
+        {
+            reg:2080,
+            val:LVBush2tand
+        },
+        {
+            reg:2081,
+            val:LVBush3tand
+        },
+        {
+            reg:2082,
+            val:HVBush1tand
+        },
+        {
+            reg:2083,
+            val:HVBush2tand
+        },
+        {
+            reg:2084,
+            val:HVBush3tand
+        }
+    ]
+}
 
 serverSocket.on('connection',socket=>{
-    var server = new Server();
-    console.log("client connected")
-    server.pipe(socket);
-    server.on("read-input-registers", function (from, to, reply) {
-        var reg = [
-            convertValues(topOilTemp),convertValues(wndTemp),convertValues(ambientTemp*100),convertValues(loadPower),
-            convertValues(loadCurrent*100),convertValues(tapPosition*100),convertValues(oltcCurrent),convertValues(oltcVoltage*100),
-            convertValues(fankBank1Status*100),convertValues(fankBank2Status*100),convertValues(fankBank3Status*100),convertValues(fankBank4Status*100),
-            convertValues(fankBank1Current),convertValues(fankBank2Current),convertValues(fankBank3Current),convertValues(fankBank4Current),
-        ]
-        return reply(null, reg);
-    });
-    socket.on("error", (err) =>socket.end())
+    socket.on("data",data=>{
+      socket.write((new Buffer.from(Modbus(data),'utf-8')))
     })
-    console.log("hello")
+    socket.on("error", (err) =>socket.end())
+})
 
 function SocketDeactivate(){
     serverSocket.close()
@@ -236,6 +444,18 @@ function CalculateTags(){
     //Winding Temp
     wndTemp = WindingTemp(topOilTemp)
 
+    //cooling subsystem
+    CoolingTags(topOilTemp)
+
+    //tandelta calculation
+    tanDeltaCal()
+
+    //capacitance calculation
+    capacitanceCal()
+    
+    //updating the register values
+    updateRegisterValues()
+
 }
 
 function TopOilCal(loadpecentage){
@@ -256,6 +476,20 @@ function TopOilCal(loadpecentage){
 
 }
 
+function CoolingTags(topOilTemp){
+    if(topOilTemp >= fankBank1Threshold*100){
+        OLTCFB1InletTemp = randomBetweenTwoNumbers(topOilTemp-100,topOilTemp+100)
+        OLTCFB1OutletTemp = randomBetweenTwoNumbers(topOilTemp-300,topOilTemp-200)
+        OLTCFB1TempDiff = OLTCFB1InletTemp - OLTCFB1OutletTemp
+    }
+    else{
+        OLTCFB1InletTemp = randomBetweenTwoNumbers(topOilTemp-50,topOilTemp-10)
+        OLTCFB1OutletTemp = randomBetweenTwoNumbers(topOilTemp-70,topOilTemp-50)
+        OLTCFB1TempDiff = OLTCFB1InletTemp - OLTCFB1OutletTemp
+    }
+
+}
+
 function WindingTemp(topOilTemp){
     return Math.round((wndgTempAtRatedLoad/topOilTempRiseAtRatedLoad)*topOilTemp)
 }
@@ -268,13 +502,35 @@ function TapPos(){
 
     if(tapPosition !== newtapPosition){
         tapPosition = newtapPosition
+        setTimeout(()=>(oltcCurrent = 0),5000)
         oltcCurrent = randomBetweenTwoNumbers(386,396)
     }
-    else{
-        tapPosition = newtapPosition
-        oltcCurrent = 0
-    }
 }
+
+function tanDeltaCal(){
+    MVBush1tand = randomBetweenTwoNumbers(270,290);
+    MVBush2tand = randomBetweenTwoNumbers(270,290);
+    MVBush3tand = randomBetweenTwoNumbers(270,290);
+    LVBush1tand = randomBetweenTwoNumbers(270,290);
+    LVBush2tand = randomBetweenTwoNumbers(270,290);
+    LVBush3tand = randomBetweenTwoNumbers(270,290);
+    HVBush1tand = randomBetweenTwoNumbers(270,290);
+    HVBush2tand = randomBetweenTwoNumbers(270,290);
+    HVBush3tand = randomBetweenTwoNumbers(270,290);
+}
+
+function capacitanceCal(){
+    MVBush1Cap = 3183.09/(0.001*MVBush1tand);
+    MVBush2Cap = 3183.09/(0.001*MVBush2tand);
+    MVBush3Cap = 3183.09/(0.001*MVBush3tand);
+    LVBush1Cap = 3183.09/(0.001*LVBush1tand);
+    LVBush2Cap = 3183.09/(0.001*LVBush2tand);
+    LVBush3Cap = 3183.09/(0.001*LVBush3tand);
+    HVBush1Cap = 3183.09/(0.001*HVBush1tand);
+    HVBush2Cap = 3183.09/(0.001*HVBush2tand);
+    HVBush3Cap = 3183.09/(0.001*HVBush3tand);
+}
+
 
 function CalculateTapPos(voltage){
 
@@ -398,6 +654,10 @@ function ChangeValues(regulation,automatic,load){
     TagsGeneration()
 }
 
+function ChangeAmbTemp(ambTemp){
+    ambientTemp = parseFloat(ambTemp) 
+}
+
 function GetValues(){
     return({regulation:voltageRegulation,
         port:modbusPort,
@@ -415,7 +675,7 @@ function getPresentPort(){
 //     res.send("Hello")
 // })
 
-app.listen(9000)
+app.listen(9000+(+No),()=>console.log(9000+(+No)))
 
 // app.use((req, res, next) => {
 //     res.header("Access-Control-Allow-Origin", "*");
@@ -447,9 +707,9 @@ const getApiAndEmit = socket => {
   socket.emit("FromAPI", response);
 };
 
-server.listen(8000,()=>{console.log("socket port is 8000")})
+server.listen(8000+(+No),()=>{console.log("socket port is",8000+(+No))})
 
-export {ChangeValues,SocketActivation,SocketDeactivate,GetValues,getPresentPort}
+export {ChangeValues,SocketActivation,SocketDeactivate,GetValues,getPresentPort,ChangeAmbTemp}
 
 
 

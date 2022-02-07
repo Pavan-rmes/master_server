@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { SocketActivation,SocketDeactivate,ChangeValues,GetValues,getPresentPort } from "./index.js";
+import { SocketActivation,SocketDeactivate,ChangeValues,GetValues,getPresentPort,ChangeAmbTemp } from "./index.js";
 import express from "express";
 
 const realTimeRouter = Router();
@@ -25,6 +25,11 @@ realTimeRouter.post("/",express.json(),(req,res)=>{
 
 realTimeRouter.get("/",(req,res)=>{
     res.send(GetValues())
+})
+
+realTimeRouter.post("/ambtemp",express.json(),(req,res)=>{
+    ChangeAmbTemp(req.body.ambTemp)
+    res.send({status:"success"})
 })
 
 export default realTimeRouter;
