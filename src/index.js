@@ -90,6 +90,10 @@ let LVBush1tand;let LVBush2tand;let LVBush3tand;
 let HVBush1tand;let HVBush2tand;let HVBush3tand;
 
 
+//Main tank Dga 
+let C2H4;let CH4; let H2; let O2; let CO;
+let C2H6; let MST ; let CO2; let C2H2; 
+
 
 //This function converts befor giving it to holding registers
 function convertValues(num){
@@ -304,6 +308,46 @@ function updateRegisterValues(){
         {
             reg:2087,
             val:oltcMtrPower
+        },
+        {
+            reg:2088,
+            val:oltcMtrTorque
+        },
+        {
+            reg:2089,
+            val:C2H4
+        },
+        {
+            reg:2090,
+            val:CH4
+        },
+        {
+            reg:2091,
+            val:C2H2
+        },
+        {
+            reg:2092,
+            val:CO2
+        },
+        {
+            reg:2093,
+            val:C2H6
+        },
+        {
+            reg:2094,
+            val:O2
+        },
+        {
+            reg:2095,
+            val:CO
+        },
+        {
+            reg:2096,
+            val:MST
+        },
+        {
+            reg:2097,
+            val:H2
         }
     ]
 }
@@ -434,7 +478,7 @@ async function TagsGeneration(){
                     loadpecentage  = randomBetweenTwoNumbers(38,45)
                 }
             }
-
+            
             CalculateTags()
             //sleep for 1 sec
             await sleep(1000)
@@ -454,6 +498,8 @@ function CalculateTags(){
     //Load power and current
     LoadPowerCurrent(loadpecentage)
 
+    //OLTC subsystem
+    OLTCTags(loadpecentage)
 
     //OLTC Current,Voltage and Tap-pos
     TapPos(topOilTemp)
@@ -474,8 +520,8 @@ function CalculateTags(){
     //capacitance calculation
     capacitanceCal()
 
-    //OLTC subsystem
-    OLTCTags(loadpecentage)
+    //Maintank dga values
+    MainTankDga()
     
     //updating the register values
     updateRegisterValues()
@@ -557,13 +603,27 @@ function TapPos(topOilTemp){
     }
 }
 
+
 async function InrushCurr(){
     for(let i=0;i<=20;i++){
         oltcIRCurr = Math.round((oltcSSCurrent*10) -(9*oltcSSCurrent*(Math.pow(2.718,0.01*(i-20)))))
         oltcMtrPower = Math.round(oltcIRCurr * 1.737*oltcVoltage/1000 *0.8)
-        oltcMtrTorque = Math.round(oltcMtrPower*10/157)
+        oltcMtrTorque = ((oltcMtrPower*10/157).toFixed(2))*100
+        updateRegisterValues()
         await sleep(1000)
     }
+}
+
+async function MainTankDga(){
+    C2H4 = randomBetweenTwoNumbers(1073,1500)
+    CH4 = randomBetweenTwoNumbers(0,90)
+    C2H2 = randomBetweenTwoNumbers(0,50)
+    CO2 = randomBetweenTwoNumbers(3000,6000)
+    C2H6 = randomBetweenTwoNumbers(0,300)
+    O2 = Math.round(randomBetweenTwoNumbers(5,15))*1000
+    CO = randomBetweenTwoNumbers(7335,28554)
+    MST = randomBetweenTwoNumbers(474,512)
+    H2 = randomBetweenTwoNumbers(3471,6801)
 }
 
 
