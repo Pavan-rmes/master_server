@@ -6,6 +6,7 @@ import { Server as socketIo } from "socket.io";
 import http from "http"
 import realTimeRouter from "./realtime.js";
 import cors from "cors"
+import e from "express";
 
 const app = express()
 
@@ -60,10 +61,13 @@ let topOilTempRiseAtRatedLoad = 35
 let wndgTempAtRatedLoad = 40
 
 // cooling system
-let OLTCFB1InletTemp;
-let OLTCFB1OutletTemp;
-let OLTCFB1TempDiff;
+let FB1InletTemp;
+let FB1OutletTemp;
+let FB1TempDiff;
 let RegMap=[];
+
+//OLTCTags
+let OLTCTopOil;
 
 
 //Bushing tags
@@ -201,15 +205,15 @@ function updateRegisterValues(){
         },
         {
             reg:2064,
-            val:OLTCFB1InletTemp   
+            val:FB1InletTemp   
         },
         {
             reg:2065,
-            val:OLTCFB1OutletTemp
+            val:FB1OutletTemp
         },
         {
             reg:2066,
-            val:OLTCFB1TempDiff
+            val:FB1TempDiff
         },
         {
             reg:2067,
@@ -282,6 +286,10 @@ function updateRegisterValues(){
         {
             reg:2084,
             val:HVBush3tand
+        },
+        {
+            reg:2085,
+            val:OLTCTopOil
         }
     ]
 }
@@ -307,12 +315,11 @@ SocketActivation(modbusPort)
 
 async function TagsGeneration(){
 
-    let date =new Date().toLocaleTimeString()
-    let [time,timePeriod] = date.split(" ")
-    let [hr,min,sec] = time.split(":")
     if(automaticLoadGeneration){
         while(automaticLoadGeneration){
-
+            let date =new Date().toLocaleTimeString()
+            let [time,timePeriod] = date.split(" ")
+            let [hr,min,sec] = time.split(":")
             //For morning the load varing will be
             if(timePeriod === "am" || timePeriod === "AM"){
                 if(hr==="0"){
@@ -452,6 +459,9 @@ function CalculateTags(){
 
     //capacitance calculation
     capacitanceCal()
+
+    //OLTC subsystem
+    OLTCTags(loadpecentage)
     
     //updating the register values
     updateRegisterValues()
@@ -478,14 +488,37 @@ function TopOilCal(loadpecentage){
 
 function CoolingTags(topOilTemp){
     if(topOilTemp >= fankBank1Threshold*100){
-        OLTCFB1InletTemp = randomBetweenTwoNumbers(topOilTemp-100,topOilTemp+100)
-        OLTCFB1OutletTemp = randomBetweenTwoNumbers(topOilTemp-300,topOilTemp-200)
-        OLTCFB1TempDiff = OLTCFB1InletTemp - OLTCFB1OutletTemp
+        FB1InletTemp = randomBetweenTwoNumbers(topOilTemp-100,topOilTemp+100)
+        FB1OutletTemp = randomBetweenTwoNumbers(topOilTemp-300,topOilTemp-200)
+        FB1TempDiff = FB1InletTemp - FB1OutletTemp
     }
     else{
-        OLTCFB1InletTemp = randomBetweenTwoNumbers(topOilTemp-50,topOilTemp-10)
-        OLTCFB1OutletTemp = randomBetweenTwoNumbers(topOilTemp-70,topOilTemp-50)
-        OLTCFB1TempDiff = OLTCFB1InletTemp - OLTCFB1OutletTemp
+        FB1InletTemp = randomBetweenTwoNumbers(topOilTemp-50,topOilTemp-10)
+        FB1OutletTemp = randomBetweenTwoNumbers(topOilTemp-70,topOilTemp-50)
+        FB1TempDiff = FB1InletTemp - FB1OutletTemp
+    }
+
+}
+
+function OLTCTags(loadpecentage){
+    OLTCTopOil = topOilTemp - randomBetweenTwoNumbers(100,300)
+    if(loadpecentage >65 & loadpecentage <70){
+        tapPosition = 4
+    }
+    else if(loadpecentage >70 & loadpecentage <75){
+        tapPosition = 3
+    }
+    else if(loadpecentage >40 & loadpecentage <50){
+        tapPosition = 6
+    }
+    else if(loadpecentage >30 & loadpecentage <40){
+        tapPosition = 7
+    }
+    else if(loadpecentage >40 & loadpecentage <50){
+        tapPosition = 6
+    }
+    else if(loadpecentage >50 && loadpecentage <65){
+        tapPosition = 5
     }
 
 }
