@@ -16,9 +16,6 @@ let topOilTemp;
 let wndTemp;
 let loadPower;
 let loadCurrent;
-let tapPosition;
-let oltcCurrent = 0;
-let oltcVoltage;
 
 let fankBank1Status
 let fankBank2Status
@@ -66,6 +63,15 @@ let FB1OutletTemp;
 let FB1TempDiff;
 let RegMap=[];
 
+
+//Oltc motor rating is 
+// p = 1.1kw , i = 2.08A max , 3 ph , 220-250 volt , speed = 1500 RPM
+let tapPosition;
+let oltcSSCurrent = 0;
+let oltcVoltage;
+let oltcIRCurr = 0;
+let oltcMtrPower = 0;
+let oltcMtrTorque = 0;
 //OLTCTags
 let OLTCTopOil;
 
@@ -165,7 +171,7 @@ function updateRegisterValues(){
         },
         {
             reg:2054,
-            val:oltcCurrent
+            val:oltcSSCurrent
         },
         {
             reg:2055,
@@ -290,6 +296,14 @@ function updateRegisterValues(){
         {
             reg:2085,
             val:OLTCTopOil
+        },
+        {
+            reg:2086,
+            val:oltcIRCurr
+        },
+        {
+            reg:2087,
+            val:oltcMtrPower
         }
     ]
 }
@@ -442,7 +456,7 @@ function CalculateTags(){
 
 
     //OLTC Current,Voltage and Tap-pos
-    TapPos()
+    TapPos(topOilTemp)
     oltcVoltage = randomBetweenTwoNumbers(210,220)
 
     //Fankbank 
@@ -502,24 +516,24 @@ function CoolingTags(topOilTemp){
 
 function OLTCTags(loadpecentage){
     OLTCTopOil = topOilTemp - randomBetweenTwoNumbers(100,300)
-    if(loadpecentage >65 & loadpecentage <70){
-        tapPosition = 4
-    }
-    else if(loadpecentage >70 & loadpecentage <75){
-        tapPosition = 3
-    }
-    else if(loadpecentage >40 & loadpecentage <50){
-        tapPosition = 6
-    }
-    else if(loadpecentage >30 & loadpecentage <40){
-        tapPosition = 7
-    }
-    else if(loadpecentage >40 & loadpecentage <50){
-        tapPosition = 6
-    }
-    else if(loadpecentage >50 && loadpecentage <65){
-        tapPosition = 5
-    }
+    // if(loadpecentage >65 & loadpecentage <70){
+    //     tapPosition = 4
+    // }
+    // else if(loadpecentage >70 & loadpecentage <75){
+    //     tapPosition = 3
+    // }
+    // else if(loadpecentage >40 & loadpecentage <50){
+    //     tapPosition = 6
+    // }
+    // else if(loadpecentage >30 & loadpecentage <40){
+    //     tapPosition = 7
+    // }
+    // else if(loadpecentage >40 & loadpecentage <50){
+    //     tapPosition = 6
+    // }
+    // else if(loadpecentage >50 && loadpecentage <65){
+    //     tapPosition = 5
+    // }
 
 }
 
@@ -527,18 +541,31 @@ function WindingTemp(topOilTemp){
     return Math.round((wndgTempAtRatedLoad/topOilTempRiseAtRatedLoad)*topOilTemp)
 }
 
-function TapPos(){
+function TapPos(topOilTemp){
     //load volatge change in kv
     let loadVolatge= LoadVoltageCal(voltageRegulation)
     //OLTC Tap Position
     let newtapPosition = CalculateTapPos(loadVolatge)
 
+    OLTCTopOil = topOilTemp - randomBetweenTwoNumbers(100,300)
+
     if(tapPosition !== newtapPosition){
         tapPosition = newtapPosition
-        setTimeout(()=>(oltcCurrent = 0),5000)
-        oltcCurrent = randomBetweenTwoNumbers(386,396)
+        setTimeout(()=>{oltcSSCurrent = 0;oltcIRCurr = 0;oltcMtrPower=0;oltcMtrTorque=0;},40000)
+        oltcSSCurrent = randomBetweenTwoNumbers(200,215)
+        InrushCurr()
     }
 }
+
+async function InrushCurr(){
+    for(let i=0;i<=20;i++){
+        oltcIRCurr = Math.round((oltcSSCurrent*10) -(9*oltcSSCurrent*(Math.pow(2.718,0.01*(i-20)))))
+        oltcMtrPower = Math.round(oltcIRCurr * 1.737*oltcVoltage/1000 *0.8)
+        oltcMtrTorque = Math.round(oltcMtrPower*10/157)
+        await sleep(1000)
+    }
+}
+
 
 function tanDeltaCal(){
     MVBush1tand = randomBetweenTwoNumbers(270,290);
