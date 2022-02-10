@@ -17,7 +17,8 @@
     "express": "^4.17.2",
     "modbus-stream": "^0.46.0",
     "modbus-tcp": "^0.4.13",
-    "socket.io": "^4.4.1"
+    "socket.io": "^4.4.1",
+    "ssh2-sftp-client": "^7.2.2"
   },
   "devDependencies": {
     "install": "^0.13.0",

@@ -1,14 +1,15 @@
 import net from "net"
 const serverSocket = net.createServer()
-import { Server } from "modbus-tcp";
 import express from "express";
 import { Server as socketIo } from "socket.io";
 import http from "http"
 import realTimeRouter from "./realtime.js";
 import cors from "cors"
-import e from "express";
+
+
 
 const app = express()
+
 
 app.use(cors())
 
@@ -50,6 +51,9 @@ let voltageRegulation = 6
 
 //load voltage rating in volts
 let loadvoltageRatingofTransformer = 231000
+let frequency = 50
+let ratedCurrent = 250
+
 
 let loadpecentage
 let lossRatio = 6
@@ -74,6 +78,9 @@ let oltcMtrPower = 0;
 let oltcMtrTorque = 0;
 //OLTCTags
 let OLTCTopOil;
+//OLTCDGA
+let OLTC_C2H4;let OLTC_CH4; let OLTC_H2; let OLTC_O2; let OLTC_CO;
+let OLTC_C2H6; let OLTC_MST ; let OLTC_CO2; let OLTC_C2H2; 
 
 
 //Bushing tags
@@ -314,40 +321,76 @@ function updateRegisterValues(){
             val:oltcMtrTorque
         },
         {
-            reg:2089,
+            reg:2090,
             val:C2H4
         },
         {
-            reg:2090,
+            reg:2091,
             val:CH4
         },
         {
-            reg:2091,
+            reg:2092,
             val:C2H2
         },
         {
-            reg:2092,
+            reg:2093,
             val:CO2
         },
         {
-            reg:2093,
+            reg:2094,
             val:C2H6
         },
         {
-            reg:2094,
+            reg:2095,
             val:O2
         },
         {
-            reg:2095,
+            reg:2096,
             val:CO
         },
         {
-            reg:2096,
+            reg:2097,
             val:MST
         },
         {
-            reg:2097,
+            reg:2098,
             val:H2
+        },
+        {
+            reg:3000,
+            val:OLTC_C2H4
+        },
+        {
+            reg:3001,
+            val:OLTC_CH4
+        },
+        {
+            reg:3002,
+            val:OLTC_C2H2
+        },
+        {
+            reg:3003,
+            val:OLTC_CO2
+        },
+        {
+            reg:3004,
+            val:OLTC_C2H6
+        },
+        {
+            reg:3005,
+            val:OLTC_O2
+        },
+        {
+            reg:3006,
+            val:OLTC_CO
+        },
+        {
+            reg:3007,
+            val:OLTC_MST
+        },
+        {
+            reg:3008,
+            val:OLTC_H2
         }
     ]
 }
@@ -480,6 +523,10 @@ async function TagsGeneration(){
             }
             
             CalculateTags()
+
+            //Maintank dga values
+            MainTankDga()
+
             //sleep for 1 sec
             await sleep(1000)
 
@@ -520,8 +567,8 @@ function CalculateTags(){
     //capacitance calculation
     capacitanceCal()
 
-    //Maintank dga values
-    MainTankDga()
+    //OLTC_DGa gases
+    OLTCDga()
     
     //updating the register values
     updateRegisterValues()
@@ -561,7 +608,7 @@ function CoolingTags(topOilTemp){
 }
 
 function OLTCTags(loadpecentage){
-    OLTCTopOil = topOilTemp - randomBetweenTwoNumbers(100,300)
+    OLTCTopOil = topOilTemp + randomBetweenTwoNumbers(100,300)
     // if(loadpecentage >65 & loadpecentage <70){
     //     tapPosition = 4
     // }
@@ -593,7 +640,7 @@ function TapPos(topOilTemp){
     //OLTC Tap Position
     let newtapPosition = CalculateTapPos(loadVolatge)
 
-    OLTCTopOil = topOilTemp - randomBetweenTwoNumbers(100,300)
+    OLTCTopOil = topOilTemp + randomBetweenTwoNumbers(100,300)
 
     if(tapPosition !== newtapPosition){
         tapPosition = newtapPosition
@@ -624,6 +671,19 @@ async function MainTankDga(){
     CO = randomBetweenTwoNumbers(7335,28554)
     MST = randomBetweenTwoNumbers(474,512)
     H2 = randomBetweenTwoNumbers(3471,6801)
+}
+
+async function OLTCDga(){
+    OLTC_C2H4 = randomBetweenTwoNumbers(2,84)
+    OLTC_CH4 = randomBetweenTwoNumbers(0,50)
+    OLTC_C2H2 = randomBetweenTwoNumbers(200,500)
+    OLTC_CO2 = randomBetweenTwoNumbers(350,470)
+    OLTC_C2H6 = randomBetweenTwoNumbers(0,300)
+    OLTC_O2 = Math.round(randomBetweenTwoNumbers(5,15))*1000
+    OLTC_CO = randomBetweenTwoNumbers(120,420)
+    OLTC_MST = randomBetweenTwoNumbers(3995,4020)
+    OLTC_H2 = randomBetweenTwoNumbers(4471,7001)
+
 }
 
 
@@ -766,11 +826,12 @@ function LoadVoltageCal(voltageRegulation){
 
 TagsGeneration()
 
-function ChangeValues(regulation,automatic,load){
+function ChangeValues(regulation,automatic,load,dgaValues){
     voltageRegulation = regulation
     automaticLoadGeneration=false
     automatic=== "yes"?automaticLoadGeneration=true:automaticLoadGeneration=false
     loadpecentage = parseFloat(load)
+    H2 = +dgaValues.H2;C2H6=+dgaValues.C2H6;CH4=+dgaValues.CH4;C2H4=+dgaValues.C2H4;C2H2=+dgaValues.C2H2
     TagsGeneration()
 }
 
@@ -782,12 +843,23 @@ function GetValues(){
     return({regulation:voltageRegulation,
         port:modbusPort,
         automatic:automaticLoadGeneration,
-        loadpercentage:loadpecentage
+        loadpercentage:loadpecentage,
+        C2H4,CH4,C2H2,CO2,C2H6,O2,CO,MST,H2
     })
 }
 
 function getPresentPort(){
     return modbusPort
+}
+
+function GetNameplateValues(){
+    return({
+        lpow:loadPowerRatingofTransformer,
+        lvol:loadvoltageRatingofTransformer,
+        toTemp:topOilTempRiseAtRatedLoad,
+        fq:frequency,
+        rcurr:ratedCurrent
+    })
 }
 
 
@@ -829,7 +901,7 @@ const getApiAndEmit = socket => {
 
 server.listen(8000+(+No),()=>{console.log("socket port is",8000+(+No))})
 
-export {ChangeValues,SocketActivation,SocketDeactivate,GetValues,getPresentPort,ChangeAmbTemp}
+export {ChangeValues,SocketActivation,SocketDeactivate,GetValues,getPresentPort,ChangeAmbTemp,GetNameplateValues}
 
 
 
