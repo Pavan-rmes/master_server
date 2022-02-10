@@ -855,11 +855,19 @@ function getPresentPort(){
 function GetNameplateValues(){
     return({
         lpow:loadPowerRatingofTransformer,
-        lvol:loadvoltageRatingofTransformer,
+        lvol:loadvoltageRatingofTransformer/1000,
         toTemp:topOilTempRiseAtRatedLoad,
         fq:frequency,
         rcurr:ratedCurrent
     })
+}
+
+function changeNameplate(rating){
+    loadPowerRatingofTransformer=rating?.lpow;
+    loadvoltageRatingofTransformer = rating?.lvol*1000;
+    topOilTempRiseAtRatedLoad = rating?.toTemp;
+    frequency= rating?.fq;
+    ratedCurrent = rating?.rcurr
 }
 
 
@@ -901,7 +909,7 @@ const getApiAndEmit = socket => {
 
 server.listen(8000+(+No),()=>{console.log("socket port is",8000+(+No))})
 
-export {ChangeValues,SocketActivation,SocketDeactivate,GetValues,getPresentPort,ChangeAmbTemp,GetNameplateValues}
+export {ChangeValues,SocketActivation,SocketDeactivate,GetValues,getPresentPort,ChangeAmbTemp,GetNameplateValues,changeNameplate}
 
 
 
