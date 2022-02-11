@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { SocketActivation,SocketDeactivate,ChangeValues,GetValues,getPresentPort,ChangeAmbTemp,changeNameplate,GetNameplateValues } from "./index.js";
+import { SocketActivation,SocketDeactivate,changeDgaValues,ChangeValues,GetValues,getPresentPort,ChangeAmbTemp,changeNameplate,GetNameplateValues } from "./index.js";
 import express from "express";
 
 const realTimeRouter = Router();
@@ -7,9 +7,8 @@ const realTimeRouter = Router();
 realTimeRouter.post("/",express.json(),(req,res)=>{
     const filter = req.body
     console.log(filter)
-    const {regulation,port,automatic,percentage,...dgaValues} = filter
+    const {regulation,port,automatic,percentage} = filter
     let load = percentage
-    res.header("Access-Control-Allow-Origin", "*");
     res.send(GetValues())
     if(getPresentPort() === +port) {
         'pass'
@@ -18,12 +17,19 @@ realTimeRouter.post("/",express.json(),(req,res)=>{
         SocketDeactivate()
         SocketActivation(+port)
     }
-    ChangeValues(regulation,automatic,load,dgaValues)
+    ChangeValues(regulation,automatic,load)
     
 })
 
 realTimeRouter.get("/",(req,res)=>{
     res.send(GetValues())
+})
+
+realTimeRouter.post("/dga",express.json(),(req,res)=>{
+    changeDgaValues(req.body)
+    console.log(req.body)
+    res.send({status:"success"})
+    
 })
 
 realTimeRouter.get("/nameplate",(req,res)=>{

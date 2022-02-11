@@ -826,17 +826,23 @@ function LoadVoltageCal(voltageRegulation){
 
 TagsGeneration()
 
-function ChangeValues(regulation,automatic,load,dgaValues){
+function ChangeValues(regulation,automatic,load){
     voltageRegulation = regulation
     automaticLoadGeneration=false
     automatic=== "yes"?automaticLoadGeneration=true:automaticLoadGeneration=false
     loadpecentage = parseFloat(load)
-    H2 = +dgaValues.H2;C2H6=+dgaValues.C2H6;CH4=+dgaValues.CH4;C2H4=+dgaValues.C2H4;C2H2=+dgaValues.C2H2
+    TagsGeneration()
+}
+
+function changeDgaValues(dgaValues){
+    console.log(dgaValues)
+    H2 = (+dgaValues.H2)*100;C2H6=(+dgaValues.C2H6)*100;CH4=(+dgaValues.CH4)*100;C2H4=(+dgaValues.C2H4)*100;C2H2=(+dgaValues.C2H2)*100
     TagsGeneration()
 }
 
 function ChangeAmbTemp(ambTemp){
-    ambientTemp = parseFloat(ambTemp) 
+    ambientTemp = parseFloat(ambTemp)
+    updateRegisterValues() 
 }
 
 function GetValues(){
@@ -844,7 +850,7 @@ function GetValues(){
         port:modbusPort,
         automatic:automaticLoadGeneration,
         loadpercentage:loadpecentage,
-        C2H4,CH4,C2H2,CO2,C2H6,O2,CO,MST,H2
+        C2H4:C2H4/100,CH4:CH4/100,C2H2:C2H2/100,CO2:CO2/100,C2H6:C2H6/100,O2:O2,CO:CO/100,MST:MST/100,H2:H2/100
     })
 }
 
@@ -868,6 +874,7 @@ function changeNameplate(rating){
     topOilTempRiseAtRatedLoad = rating?.toTemp;
     frequency= rating?.fq;
     ratedCurrent = rating?.rcurr
+    TagsGeneration()
 }
 
 
@@ -909,7 +916,7 @@ const getApiAndEmit = socket => {
 
 server.listen(8000+(+No),()=>{console.log("socket port is",8000+(+No))})
 
-export {ChangeValues,SocketActivation,SocketDeactivate,GetValues,getPresentPort,ChangeAmbTemp,GetNameplateValues,changeNameplate}
+export {ChangeValues,SocketActivation,SocketDeactivate,GetValues,changeDgaValues,getPresentPort,ChangeAmbTemp,GetNameplateValues,changeNameplate}
 
 
 
