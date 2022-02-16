@@ -5,6 +5,7 @@ import { Server as socketIo } from "socket.io";
 import http from "http"
 import realTimeRouter from "./realtime.js";
 import cors from "cors"
+import axios from "axios";
 
 
 
@@ -100,6 +101,14 @@ let HVBush1tand;let HVBush2tand;let HVBush3tand;
 //Main tank Dga 
 let C2H4;let CH4; let H2; let O2; let CO;
 let C2H6; let MST ; let CO2; let C2H2; 
+
+
+
+axios.get(`http://api.openweathermap.org/data/2.5/weather?zip=507002,IN&appid=43aa700123b6e84a6be0c446132dd5fa`)
+.then(data => {
+    ambientTemp = parseFloat((+(data.data.main.temp) - 273).toFixed(2))
+}).catch((err)=>console.log("cannot get the ambient temp"))
+
 
 
 //This function converts befor giving it to holding registers
@@ -527,6 +536,9 @@ async function TagsGeneration(){
             //Maintank dga values
             MainTankDga()
 
+            //Fankbank 
+            FanBank(topOilTemp)
+
             //sleep for 1 sec
             await sleep(1000)
 
@@ -534,6 +546,10 @@ async function TagsGeneration(){
     }
     else{
         CalculateTags()
+        if(topOilTemp>=fankBank1Threshold*100 && topOilTemp<fankBank2Threshold*100){
+            //Fankbank 
+            FanBank(topOilTemp)
+        }
     }
 
 }
@@ -551,9 +567,6 @@ function CalculateTags(){
     //OLTC Current,Voltage and Tap-pos
     TapPos(topOilTemp)
     oltcVoltage = randomBetweenTwoNumbers(210,220)
-
-    //Fankbank 
-    FanBank(topOilTemp)
 
     //Winding Temp
     wndTemp = WindingTemp(topOilTemp)
@@ -649,7 +662,6 @@ function TapPos(topOilTemp){
         InrushCurr()
     }
 }
-
 
 async function InrushCurr(){
     for(let i=0;i<=20;i++){
@@ -863,6 +875,7 @@ function GetNameplateValues(){
         lpow:loadPowerRatingofTransformer,
         lvol:loadvoltageRatingofTransformer/1000,
         toTemp:topOilTempRiseAtRatedLoad,
+        wndTemp:wndgTempAtRatedLoad,
         fq:frequency,
         rcurr:ratedCurrent
     })
@@ -874,9 +887,19 @@ function changeNameplate(rating){
     topOilTempRiseAtRatedLoad = rating?.toTemp;
     frequency= rating?.fq;
     ratedCurrent = rating?.rcurr
+    wndgTempAtRatedLoad = rating?.wndTemp
     TagsGeneration()
 }
 
+export function getFanbankStatus(){
+    return ({Fb1status:fankBank1Status,Fb2status:fankBank2Status})
+}
+
+export function ChangeFanbankStatus(status){
+    fankBank1Status=Fb1status
+    fankBank2Status = Fb2status
+    updateRegisterValues()
+}
 
 // app.get("/",(req,res)=>{
 //     res.send("Hello")
