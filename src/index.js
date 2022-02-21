@@ -104,6 +104,10 @@ let C2H6; let MST ; let CO2; let C2H2;
 
 
 
+//Transformer name
+let trafoName ="Trafo 4"
+
+
 axios.get(`http://api.openweathermap.org/data/2.5/weather?zip=507002,IN&appid=43aa700123b6e84a6be0c446132dd5fa`)
 .then(data => {
     ambientTemp = parseFloat((+(data.data.main.temp) - 273).toFixed(2))
@@ -545,11 +549,11 @@ async function TagsGeneration(){
         }
     }
     else{
-        CalculateTags()
-        if(topOilTemp>=fankBank1Threshold*100 && topOilTemp<fankBank2Threshold*100){
+        // if(topOilTemp>=fankBank1Threshold*100){
             //Fankbank 
-            FanBank(topOilTemp)
-        }
+        FanBank(topOilTemp)
+        // }
+        CalculateTags()
     }
 
 }
@@ -653,7 +657,7 @@ function TapPos(topOilTemp){
     //OLTC Tap Position
     let newtapPosition = CalculateTapPos(loadVolatge)
 
-    OLTCTopOil = topOilTemp + randomBetweenTwoNumbers(100,300)
+    OLTCTopOil = topOilTemp + randomBetweenTwoNumbers(100,150)
 
     if(tapPosition !== newtapPosition){
         tapPosition = newtapPosition
@@ -771,24 +775,28 @@ function FanBank(topOilTemp){
         fankBank4Status = 0
     }
     else if(topOilTemp>=fankBank1Threshold*100 && topOilTemp<fankBank2Threshold*100){
+        topOilTemp = 0.99*topOilTemp
         fankBank1Status = 1
         fankBank2Status = 0
         fankBank3Status = 0
         fankBank4Status = 0
     }
     else if(topOilTemp>=fankBank2Threshold*100 && topOilTemp < fankBank3Threshold*100){
+        topOilTemp = 0.98*topOilTemp
         fankBank1Status = 1
         fankBank2Status = 1
         fankBank3Status = 0
         fankBank4Status = 0
     }
     else if(topOilTemp>=fankBank3Threshold*100 && topOilTemp < fankBank4Threshold*100){
+        topOilTemp = 0.96*topOilTemp
         fankBank1Status = 1
         fankBank2Status = 1
         fankBank3Status = 1
         fankBank4Status = 0
     }
     else if (topOilTemp >= fankBank4Threshold*100){
+        topOilTemp = 0.94*topOilTemp
         fankBank1Status = 1
         fankBank2Status = 1
         fankBank3Status = 1
@@ -872,6 +880,7 @@ function getPresentPort(){
 
 function GetNameplateValues(){
     return({
+        name:trafoName,
         lpow:loadPowerRatingofTransformer,
         lvol:loadvoltageRatingofTransformer/1000,
         toTemp:topOilTempRiseAtRatedLoad,
@@ -882,6 +891,7 @@ function GetNameplateValues(){
 }
 
 function changeNameplate(rating){
+    trafoName = rating?.name;
     loadPowerRatingofTransformer=rating?.lpow;
     loadvoltageRatingofTransformer = rating?.lvol*1000;
     topOilTempRiseAtRatedLoad = rating?.toTemp;
@@ -896,8 +906,8 @@ export function getFanbankStatus(){
 }
 
 export function ChangeFanbankStatus(status){
-    fankBank1Status=Fb1status
-    fankBank2Status = Fb2status
+    fankBank1Status= status.Fb1Status
+    fankBank2Status = status.Fb2Status
     updateRegisterValues()
 }
 
@@ -931,6 +941,7 @@ io.on("connection", (socket) => {
     console.log("Client disconnected");
     clearInterval(interval);
   });
+  socket.on("test",(arg)=>console.log(arg))
 });
 const getApiAndEmit = socket => {
   const response = {topOilTemp,wndTemp,tapPosition:tapPosition*100}
@@ -940,7 +951,6 @@ const getApiAndEmit = socket => {
 server.listen(8000+(+No),()=>{console.log("socket port is",8000+(+No))})
 
 export {ChangeValues,SocketActivation,SocketDeactivate,GetValues,changeDgaValues,getPresentPort,ChangeAmbTemp,GetNameplateValues,changeNameplate}
-
 
 
 

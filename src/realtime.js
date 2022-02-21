@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { SocketActivation,SocketDeactivate,changeDgaValues,ChangeValues,GetValues,getPresentPort,ChangeAmbTemp,changeNameplate,GetNameplateValues,getFanbankStatus } from "./index.js";
+import { SocketActivation,SocketDeactivate,changeDgaValues,ChangeValues,GetValues,getPresentPort,ChangeAmbTemp,changeNameplate,GetNameplateValues,getFanbankStatus,ChangeFanbankStatus } from "./index.js";
 import express from "express";
 
 const realTimeRouter = Router();
@@ -53,6 +53,15 @@ realTimeRouter.get("/fanbank",(req,res)=>{
 realTimeRouter.post("/fanbank",express.json(),(req,res)=>{
     ChangeFanbankStatus(req.body)
     res.send({status:"success"})
+})
+
+realTimeRouter.get("/trafoname",(req,res)=>{
+    res.send(getTrafoName())
+})
+
+realTimeRouter.post("/trafoname",(req,res)=>{
+    ChangeTrafoName(req.body)
+    res.send({status:"Success"})
 })
 
 
